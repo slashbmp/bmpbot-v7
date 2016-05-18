@@ -1,0 +1,9 @@
+LIBRARY      "sampled"
+
+EXPORTS
+	cfbot_initialize
+	cfbot_finalize
+	cfbot_add_client
+	cfbot_remove_client
+	cfbot_plugininformation
+	cfbot_pushevent
