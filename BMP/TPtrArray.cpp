@@ -116,3 +116,13 @@ void TPtrArray::Insert(long nIndex,void* ptr)
 	delete m_pAll;
 	m_pAll = ptrNow;
 }
+
+void TPtrArray::Del(void* p) {
+	long i;
+	for (i = 0; i < m_lPtr; i++) {
+		if ((void*)m_pAll[i] == p) {
+			DelAt(i);
+			break;
+		}
+	}
+}

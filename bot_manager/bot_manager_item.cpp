@@ -79,12 +79,38 @@ void bot_manager_item::on_push_event(bot_exchange_format f)
 {
 	switch (f.pid)
 	{
+	case BOT_EVENT_ROOM_TALK:
+	{
+								TString nick = std::string(f[2]).c_str();
+								_bot->onTalk(nick, (u_char)f[1]);
+	} break;
+	case BOT_EVENT_ROOM_IN:
+	{
+							  _bot->onJoin(f);
+	} break;
+	case BOT_EVENT_ROOM_OUT:
+	{
+							   TString nick = std::string(f[1]).c_str();
+							   _bot->onLeft(nick);
+	} break;
+	case BOT_EVENT_ROOM_TIMER:
+		{
+			_bot->onTimer();
+		} break;
+
+	case BOT_EVENT_ROOM_TEXT:
+	{
+								TString nick = std::string(f[0x01]).c_str();
+								TString text = std::string(f[0x02]).c_str();
+								_bot->onText(nick, text);
+	} break;
+
 	case BOT_EVENT_IM:
 		{
 			TString nick = std::string(f[0x01]).c_str();
 			int feedback = (int)f[0x02];
 			u_char age = (u_char)f[0x03];
-			std::string text = std::string(f[0x04]);
+			TString text = std::string(f[0x04]).c_str();
 			u_char attributes = (u_char)f[0x05];
 			u_char size = (u_char)f[0x06];
 			u_long color = (u_long)f[0x07];
@@ -93,38 +119,9 @@ void bot_manager_item::on_push_event(bot_exchange_format f)
 			u_char pitch = (u_char)f[0x0A];
 			std::string font = (std::string)f[0x0B];
 
-			if (nick.IsEQ(L"SlashBMP") && !text.empty())
+			if (text.GetLength() > 0)
 			{
-				TString theText = text.c_str();
-				_bot->say(theText.GetAsWChar());
-				/*transform(text.begin(), text.end(), text.begin(), toupper);
-
-				if (!strcmp(text.c_str(), "/VER"))
-				{
-					bot_exchange_format p(PLUGIN_EVENT_IM);
-					p << bot_value(0x01, nickname);
-					std::string text = ("BMP v7 JS Plugin");
-					if (!_message.empty())
-					{
-						text.append(" (");
-						text.append(_message);
-						text.append(")");
-					}
-						
-					p << bot_value(0x02, text.c_str() );
-					p << bot_value(0x03, attributes);
-					p << bot_value(0x04, size);
-					p << bot_value(0x05, color);
-					p << bot_value(0x06, effects);
-					p << bot_value(0x07, charset);
-					p << bot_value(0x08, pitch);
-					p << bot_value(0x09, font);
-
-					std::string d = p.data();
-
-					_mngr->deliver_event(_name.c_str(), d.c_str(), (int)d.size());
-
-				}*/
+				_bot->onIm(nick, text);
 			}
 		} break;
 

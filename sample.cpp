@@ -26,7 +26,7 @@ extern "C"
 			return 0;
 		}
 
-		callbacks->cfbot_subscribe(context, PLUGIN_UNIQID, CF_BOT_IM_EVENTS | CF_BOT_2_BOT_EVENTS);
+		callbacks->cfbot_subscribe(context, PLUGIN_UNIQID, CF_BOT_ROOM_EVENTS | CF_BOT_ROOM_TIMER | CF_BOT_SERVICE_EVENTS | CF_BOT_IM_EVENTS | CF_BOT_2_BOT_EVENTS);
 
 #ifdef WIN32
 		callbacks->cfbot_init_settings(context, PLUGIN_UNIQID, (char*)init_data.c_str(), (int)init_data.size());
