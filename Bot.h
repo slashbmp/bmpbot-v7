@@ -18,7 +18,7 @@ typedef struct MYCHARSET {
 	char font[50];
 	MYCHARSET() {
 		attributes = 1;
-		size = 14;
+		size = 16;
 		color = 0;
 		effect = 0;
 		charset = 0;
@@ -54,13 +54,16 @@ public:
 	void say(const char*);
 	void say(const wchar_t*);
 	void say(TString& text);
-	void setFontStyle(TString& fontName, int fontSize, COLORREF color);
+	void say(TString& text, TString& font, unsigned char fontSize, TString& col);
+	void setFontStyle(TString& fontName, int fontSize, COLORREF col);
 
 	struct v7* getV7();
 	v7_val_t getV7Obj();
+	const wchar_t* getWorkDir();
 
 	void onIm(TString& nick, TString& text);
-	void onText(TString& nick, TString& text);
+	//void onText(TString& nick, TString& text);
+	void onText(bot_exchange_format& f);
 	void onTimer();
 	void onJoin(bot_exchange_format& f);
 	void onLeft(TString& nick);

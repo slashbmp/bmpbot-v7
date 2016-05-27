@@ -100,9 +100,10 @@ void bot_manager_item::on_push_event(bot_exchange_format f)
 
 	case BOT_EVENT_ROOM_TEXT:
 	{
-								TString nick = std::string(f[0x01]).c_str();
+								/*TString nick = std::string(f[0x01]).c_str();
 								TString text = std::string(f[0x02]).c_str();
-								_bot->onText(nick, text);
+								_bot->onText(nick, text);*/
+								_bot->onText(f);
 	} break;
 
 	case BOT_EVENT_IM:
