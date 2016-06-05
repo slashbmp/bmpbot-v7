@@ -106,8 +106,8 @@ static enum v7_err jsBotLoadFile(struct v7* v7, v7_val_t* res) {
 	enum v7_err ress = V7_OK;
 	ress = v7_exec_file(v7, fullPath.GetAsChar(), &result);
 
-	v7_val_t* v7Obj = _activeBot->getV7Obj();
-	*v7Obj = v7_mk_object(v7);
+	//v7_val_t* v7Obj = _activeBot->getV7Obj();
+	//*v7Obj = v7_mk_object(v7);
 
 	if (ress != V7_OK) {
 		if (result == V7_SYNTAX_ERROR) MessageBox(NULL, "script fail syntax error", "Nooo", 0);
@@ -539,7 +539,7 @@ void Bot::onIm(TString& nick, TString& text) {
 		v7_array_push(v7, args, theNick);
 		v7_array_push(v7, args, theText);
 
-		v7_apply(v7, *func, *func, args, NULL);
+		v7_apply(v7, *func, *v7Obj, args, NULL);
 	}
 }
 
@@ -608,7 +608,7 @@ void Bot::onText(bot_exchange_format& f) {
 		v7_array_push(v7, args, nickName);
 		v7_array_push(v7, args, fullText);
 		v7_array_push(v7, args, attr);
-		v7_apply(v7, *func, *func, args, NULL);
+		v7_apply(v7, *func, *v7Obj, args, NULL);
 
 	}
 }
@@ -665,7 +665,7 @@ void Bot::onJoin(bot_exchange_format& f) {
 		args = v7_mk_array(v7);
 		v7_array_push(v7, args, user);
 
-		v7_apply(v7, *func, *func, args, NULL);
+		v7_apply(v7, *func, *v7Obj, args, NULL);
 	}
 }
 
@@ -682,7 +682,7 @@ void Bot::onLeft(TString& nick) {
 		args = v7_mk_array(v7);
 		v7_array_push(v7, args, userName);
 
-		v7_apply(v7, *func, *func, args, NULL);
+		v7_apply(v7, *func, *v7Obj, args, NULL);
 	}
 }
 
@@ -702,7 +702,7 @@ void Bot::onTalk(TString& nick, unsigned char flag) {
 		v7_array_push(v7, args, userName);
 		v7_array_push(v7, args, theFlag);
 
-		v7_apply(v7, *func, *func, args, NULL);
+		v7_apply(v7, *func, *v7Obj, args, NULL);
 	}
 }
 
@@ -719,6 +719,6 @@ void Bot::onMotd(TString& motd) {
 		args = v7_mk_array(v7);
 		v7_array_push(v7, args, theMotd);
 
-		v7_apply(v7, *func, *func, args, NULL);
+		v7_apply(v7, *func, *v7Obj, args, NULL);
 	}
 }
