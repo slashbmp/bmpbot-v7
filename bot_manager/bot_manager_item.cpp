@@ -77,8 +77,14 @@ void bot_manager_item::cleanup()
 
 void bot_manager_item::on_push_event(bot_exchange_format f)
 {
+	_bot->setActive();
 	switch (f.pid)
 	{
+	case BOT_EVENT_ROOM_MOTD:
+	{
+		TString motd = std::string(f[1]).c_str();
+		_bot->onMotd(motd);
+	} break;
 	case BOT_EVENT_ROOM_TALK:
 	{
 								TString nick = std::string(f[2]).c_str();

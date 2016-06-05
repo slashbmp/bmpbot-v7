@@ -90,11 +90,6 @@ DWORD GetCol(const wchar_t* str) {
 }
 
 Bot* _activeBot;
-TPtrArray _timers;
-TPtrArray _onTexts;
-TPtrArray _onJoin;
-TPtrArray _onLeft;
-TPtrArray _onTalk;
 
 static enum v7_err jsBotLoadFile(struct v7* v7, v7_val_t* res) {
 	v7_val_t file = v7_arg(v7, 0);
@@ -103,7 +98,6 @@ static enum v7_err jsBotLoadFile(struct v7* v7, v7_val_t* res) {
 	}
 	TString fullPath = _activeBot->getWorkDir();
 	TString fileName = v7_to_cstring(v7, &file);
-	fullPath += L"bmp\\";
 	fullPath += fileName.GetAsWChar();
 	if (!fexists(fullPath)) {
 		return V7_OK;
@@ -111,6 +105,9 @@ static enum v7_err jsBotLoadFile(struct v7* v7, v7_val_t* res) {
 	v7_val_t result;
 	enum v7_err ress = V7_OK;
 	ress = v7_exec_file(v7, fullPath.GetAsChar(), &result);
+
+	v7_val_t* v7Obj = _activeBot->getV7Obj();
+	*v7Obj = v7_mk_object(v7);
 
 	if (ress != V7_OK) {
 		if (result == V7_SYNTAX_ERROR) MessageBox(NULL, "script fail syntax error", "Nooo", 0);
@@ -154,16 +151,22 @@ static enum v7_err jsBotEvent(struct v7* v7, v7_val_t* res) {
 	}
 
 	if (strEvent.IsEQNC(L"text")) {
-		_onTexts.Add(func);
+		_activeBot->_onTexts.Add(func);
 	}
 	else if (strEvent.IsEQNC(L"join")) {
-		_onJoin.Add(func);
+		_activeBot->_onJoin.Add(func);
 	}
 	else if (strEvent.IsEQNC(L"left")) {
-		_onLeft.Add(func);
+		_activeBot->_onLeft.Add(func);
 	}
 	else if (strEvent.IsEQNC(L"talk")) {
-		_onTalk.Add(func);
+		_activeBot->_onTalk.Add(func);
+	}
+	else if (strEvent.IsEQNC(L"motd")) {
+		_activeBot->_onMotd.Add(func);
+	}
+	else if (strEvent.IsEQNC(L"im")) {
+		_activeBot->_onIm.Add(func);
 	}
 	return V7_OK;
 }
@@ -227,7 +230,7 @@ static enum v7_err jsSetInterval(struct v7* v7, v7_val_t* res) {
 	newTimer->repeat = 0;
 	newTimer->id = (long)newTimer;
 
-	_timers.Add(newTimer);
+	_activeBot->_timers.Add(newTimer);
 
 	double vOut = (double)newTimer->id;
 
@@ -263,7 +266,7 @@ static enum v7_err jsSetTimeout(struct v7* v7, v7_val_t* res) {
 	newTimer->timeBegin = GetTickCount();
 	newTimer->id = (long)newTimer;
 
-	_timers.Add(newTimer);
+	_activeBot->_timers.Add(newTimer);
 
 	double vOut = (double)newTimer->id;
 
@@ -286,7 +289,7 @@ static enum v7_err jsClearTimeout(struct v7* v7, v7_val_t* res) {
 
 	v7_disown(v7, (v7_val_t*)p->pToFunc);
 	delete (v7_val_t*)p->pToFunc;
-	_timers.Del(p);
+	_activeBot->_timers.Del(p);
 	delete p;
 
 	return V7_OK;
@@ -306,7 +309,7 @@ static enum v7_err jsClearInterval(struct v7* v7, v7_val_t* res) {
 
 	v7_disown(v7, (v7_val_t*)p->pToFunc);
 	delete (v7_val_t*)p->pToFunc;
-	_timers.Del(p);
+	_activeBot->_timers.Del(p);
 	delete p;
 
 	return V7_OK;
@@ -323,6 +326,8 @@ Bot::Bot(bot_manager* mgr, const char* name, const char* workDir) {
 	_workDir += botNamee.GetAsWChar();
 
 	MessageBox(NULL, _workDir.GetAsChar(), "Work Dir", 0);*/
+
+	setActive();
 
 	_workDir = workDir;
 	_workDir += L"bmp\\";
@@ -381,7 +386,9 @@ Bot::Bot(bot_manager* mgr, const char* name, const char* workDir) {
 			else if (result == V7_AST_TOO_LARGE) MessageBox(NULL, "script fail, ast too large", "Nooo", 0);
 		}
 		else {
-			v7_val_t vObj = v7_mk_object(v7);
+			v7_val_t vObj;
+			v7_own(v7, &vObj);
+			vObj = v7_mk_object(v7);
 			v7Obj = &vObj;
 		}
 	}
@@ -424,9 +431,26 @@ Bot::~Bot()
 		delete (v7_val_t*)_onTalk.GetAt(i);
 	}
 
+	l = _onMotd.GetLength();
+	for (i = 0; i < l; i++) {
+		v7_disown(v7, (v7_val_t*)_onMotd.GetAt(i));
+		delete (v7_val_t*)_onMotd.GetAt(i);
+	}
+	
+	l = _onIm.GetLength();
+	for (i = 0; i < l; i++) {
+		v7_disown(v7, (v7_val_t*)_onIm.GetAt(i));
+		delete (v7_val_t*)_onIm.GetAt(i);
+	}
+
 	v7_disown(v7, botObj);
+	v7_disown(v7, v7Obj);
 
 	v7_destroy(v7);
+}
+
+void Bot::setActive() {
+	_activeBot = this;
 }
 
 void Bot::say(std::string str) {
@@ -486,8 +510,8 @@ struct v7* Bot::getV7() {
 	return v7;
 }
 
-v7_val_t Bot::getV7Obj() {
-	return *v7Obj;
+v7_val_t* Bot::getV7Obj() {
+	return v7Obj;
 }
 
 const wchar_t* Bot::getWorkDir() {
@@ -501,7 +525,22 @@ void Bot::setFontStyle(TString& fontName, int fontSize, COLORREF fontColor) {
 }
 
 void Bot::onIm(TString& nick, TString& text) {
-	if (nick.IsEQ(L"SlashBMP")) say(text);
+	v7_val_t theNick = v7_mk_string(v7, nick.GetAsChar(), ~0, 1);
+	v7_val_t theText = v7_mk_string(v7, text.GetAsChar(), ~0, 1);
+	v7_val_t* func;
+	v7_val_t args;
+
+	long i;
+	long l = _onMotd.GetLength();
+
+	for (i = 0; i < l; i++) {
+		func = (v7_val_t*)_onIm.GetAt(i);
+		args = v7_mk_array(v7);
+		v7_array_push(v7, args, theNick);
+		v7_array_push(v7, args, theText);
+
+		v7_apply(v7, *func, *func, args, NULL);
+	}
 }
 
 /*void Bot::onText(TString& nick, TString& text) {
@@ -656,11 +695,29 @@ void Bot::onTalk(TString& nick, unsigned char flag) {
 	v7_val_t args;
 	v7_val_t userName = v7_mk_string(v7, nick.GetAsChar(), ~0, 1);
 	v7_val_t theFlag = v7_mk_number(flag);
+
 	for (i = 0; i < l; i++) {
 		func = (v7_val_t*)_onTalk.GetAt(i);
 		args = v7_mk_array(v7);
 		v7_array_push(v7, args, userName);
 		v7_array_push(v7, args, theFlag);
+
+		v7_apply(v7, *func, *func, args, NULL);
+	}
+}
+
+void Bot::onMotd(TString& motd) {
+	v7_val_t theMotd = v7_mk_string(v7, motd.GetAsChar(), ~0, 1);
+	v7_val_t* func;
+	v7_val_t args;
+
+	long i;
+	long l = _onMotd.GetLength();
+
+	for (i = 0; i < l; i++) {
+		func = (v7_val_t*)_onMotd.GetAt(i);
+		args = v7_mk_array(v7);
+		v7_array_push(v7, args, theMotd);
 
 		v7_apply(v7, *func, *func, args, NULL);
 	}

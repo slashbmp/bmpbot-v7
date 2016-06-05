@@ -50,6 +50,9 @@ class Bot
 public:
 	Bot(bot_manager*, const char*, const char*);
 	~Bot();
+
+	void setActive();
+
 	void say(std::string);
 	void say(const char*);
 	void say(const wchar_t*);
@@ -58,7 +61,7 @@ public:
 	void setFontStyle(TString& fontName, int fontSize, COLORREF col);
 
 	struct v7* getV7();
-	v7_val_t getV7Obj();
+	v7_val_t* getV7Obj();
 	const wchar_t* getWorkDir();
 
 	void onIm(TString& nick, TString& text);
@@ -68,6 +71,15 @@ public:
 	void onJoin(bot_exchange_format& f);
 	void onLeft(TString& nick);
 	void onTalk(TString& nick, unsigned char flag);
+	void onMotd(TString& motd);
+
+	TPtrArray _timers;
+	TPtrArray _onTexts;
+	TPtrArray _onJoin;
+	TPtrArray _onLeft;
+	TPtrArray _onTalk;
+	TPtrArray _onMotd;
+	TPtrArray _onIm;
 private:
 	bot_manager* _mgr;
 	TString _name;
