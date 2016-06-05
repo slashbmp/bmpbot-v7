@@ -11,7 +11,7 @@ using namespace boost::property_tree::detail;
 
 const char* str_xml =
 	"<Form Id = 'sample'>"
-	"<Label Id = 'label1' X = '20' Y = '30' Width = '200' Height = '20'>Plugin UNIQUID: CSLLCSPL</Label>"
+	"<Label Id = 'label1' X = '20' Y = '30' Width = '200' Height = '20'>Plugin UNIQUID: JSBMPBOT</Label>"
 	"<Label Id = 'label2' X = '20' Y = '60' Width = '200' Height = '20'>JS plugin by BMP</Label>"
 	"<Label Id = 'label3' X = '20' Y = '90' Width = '200' Height = '20'>mailto:bmp@live.jp</Label>"
 	"<Label Id = 'label4' X = '20' Y = '120' Width = '200' Height = '20'>http://www.bmpscript.com</Label>"

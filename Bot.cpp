@@ -18,6 +18,18 @@ void strupr(char *s)
 
 #endif
 
+std::string ExePath() {
+	char buffer[MAX_PATH];
+	GetModuleFileName(NULL, buffer, MAX_PATH);
+	std::string::size_type pos = std::string(buffer).find_last_of("\\/");
+	return std::string(buffer).substr(0, pos);
+}
+
+inline bool FileExists(const std::string& name) {
+	struct stat buffer;
+	return (stat(name.c_str(), &buffer) == 0);
+}
+
 inline bool EnsureDirExists(const wchar_t* fullDirPath)
 {
 	HWND hwnd = NULL;
@@ -86,6 +98,9 @@ TPtrArray _onTalk;
 
 static enum v7_err jsBotLoadFile(struct v7* v7, v7_val_t* res) {
 	v7_val_t file = v7_arg(v7, 0);
+	if (!v7_is_string(file)) {
+		return V7_OK;
+	}
 	TString fullPath = _activeBot->getWorkDir();
 	TString fileName = v7_to_cstring(v7, &file);
 	fullPath += L"bmp\\";
@@ -111,6 +126,9 @@ static enum v7_err jsBotFontStyle(struct v7* v7, v7_val_t* res) {
 	v7_val_t fontName = v7_arg(v7, 0);
 	v7_val_t fontSize = v7_arg(v7, 1);
 	v7_val_t fontColor = v7_arg(v7, 2);
+	if (!v7_is_string(fontName) || !v7_is_number(fontSize) || !v7_is_string(fontColor)) {
+		return V7_OK;
+	}
 	TString fontColor2 = v7_to_cstring(v7, &fontColor);
 	TString strFontName = (v7_is_null(fontName)) ? "" : (const char*)v7_to_cstring(v7, &fontName);
 	int nFontSize = (!v7_is_number(fontSize)) ? NULL : (int)v7_to_number(fontSize);
@@ -298,20 +316,35 @@ Bot::Bot(bot_manager* mgr, const char* name, const char* workDir) {
 
 	_mgr = mgr;
 	_name = name;
+	/*_workDir = std::string(ExePath()).c_str();
+	_workDir += L"\\plugins\\BMP\\";
+	TString botNamee = name;
+	botNamee.ToUpper();
+	_workDir += botNamee.GetAsWChar();
+
+	MessageBox(NULL, _workDir.GetAsChar(), "Work Dir", 0);*/
+
 	_workDir = workDir;
+	_workDir += L"bmp\\";
+
+	bool isScriptOk = true;
+	if (!EnsureDirExists(_workDir.GetAsWChar())) {
+		isScriptOk = false;
+	}
 
 	_charset.color = RGB(0xff, 0x99, 0x00);
 	_activeBot = this;
 
 	_scriptFile = _workDir.GetAsWChar();
-	_scriptFile += L"bmp\\main.js";
+	_scriptFile += L"main.js";
 
-	if (!EnsureDirExists(_scriptFile.GetAsWChar())) {
+	if (isScriptOk && !FileExists(std::string(_scriptFile.GetAsChar()))) {
 		TString strSay = L"BMP Plugin will not work, please put file 'main.js' into work dir. (";
 		strSay += _scriptFile.GetAsWChar();
 		strSay += L")";
-		say(strSay);
-		return;
+		//say(strSay);
+		MessageBox(NULL, strSay.GetAsChar(), "BMP Bot Alert", 0);
+		isScriptOk = false;
 	}
 
 	v7 = v7_create();
@@ -338,18 +371,21 @@ Bot::Bot(bot_manager* mgr, const char* name, const char* workDir) {
 	v7_set_method(v7, *botObj, "load", (v7_cfunction_t*)&jsBotLoadFile);
 
 	//rcode = v7_exec(v7, "var a = \"aaa\"; say(a); print(\"Yeah\");", &result);
-	rcode = v7_exec_file(v7, _scriptFile.GetAsChar(), &result);
+	if (isScriptOk) {
+		rcode = v7_exec_file(v7, _scriptFile.GetAsChar(), &result);
 
-	if (rcode != V7_OK) {
-		if (result == V7_SYNTAX_ERROR) MessageBox(NULL, "script fail syntax error", "Nooo", 0);
-		else if (result == V7_EXEC_EXCEPTION) MessageBox(NULL, "script fail, exception", "Nooo", 0);
-		else if (result == V7_EXEC_EXCEPTION) MessageBox(NULL, "script fail, exception", "Nooo", 0);
-		else if (result == V7_AST_TOO_LARGE) MessageBox(NULL, "script fail, ast too large", "Nooo", 0);
+		if (rcode != V7_OK) {
+			if (result == V7_SYNTAX_ERROR) MessageBox(NULL, "script fail syntax error", "Nooo", 0);
+			else if (result == V7_EXEC_EXCEPTION) MessageBox(NULL, "script fail, exception", "Nooo", 0);
+			else if (result == V7_EXEC_EXCEPTION) MessageBox(NULL, "script fail, exception", "Nooo", 0);
+			else if (result == V7_AST_TOO_LARGE) MessageBox(NULL, "script fail, ast too large", "Nooo", 0);
+		}
+		else {
+			v7_val_t vObj = v7_mk_object(v7);
+			v7Obj = &vObj;
+		}
 	}
-	else {
-		v7_val_t vObj = v7_mk_object(v7);
-		v7Obj = &vObj;
-	}
+
 }
 
 Bot::~Bot()
